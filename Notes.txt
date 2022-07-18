@@ -1,0 +1,11 @@
+Ok, so i plotted the daily values for a couple of typical days, and noticed some periodic trend which looks like
+each dayly cycle could be approximated with a 5th or 6th degree polynomial, though i'm going to come back to this. 
+I then plotted the daily average for a couple of typical months, and noticed no trend, so i checked the qq-norm
+plots for the daily averages for all years for any given month, and they appear to be normally distributed.
+I then plotted the dayly average across the entire dataset, and noticed a periodic function.
+I then plotted the monthly average, and overlayed them for each year. There does not look to be a trend between 
+the averages relative to the years.
+Ok, with all this in mind, to compare this historical data to later years i'm going to 
+1) determine the parameters for the normal distribution of daily values for each month
+2) determine the function that best fits the daily power demands for any given day.
+3) determine the function that best fits the mean of the monthly average over the corse of a year
