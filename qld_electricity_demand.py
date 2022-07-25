@@ -1,13 +1,11 @@
-import csv, math, random
+import csv, math
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from sklearn.neighbors import KernelDensity
-from sklearn.model_selection import GridSearchCV
 import pylab as py
 import numpy as np
 import pandas as pd
 
-from scipy.integrate import quad
 
 FILES = ["QLD_Demand_2015.csv", "QLD_demand_2016.csv", "QLD_demand_2017.csv", "QLD_demand_2018.csv", "QLD_demand_2019.csv"]
 
@@ -78,7 +76,7 @@ def csvbad2csvgood():
     vals = []
     act_ymd = [2020,7,1]
     ret = [["Year", "Month", "Day"] + list(range(1,49))]
-    for file in [open(x) for x in PriceNDemand(2020,range(7,12)) + PriceNDemand(2021, range(1,8))]:
+    for file in [open(x) for x in PriceNDemand(2020,range(7,13)) + PriceNDemand(2021, range(1,8))]:
         filecontent = csv.reader(file, delimiter = ",")
         head = 0
         filecontent = list(filecontent)[1:]
@@ -104,14 +102,7 @@ def csvbad2csvgood():
     pd.DataFrame(ret).to_csv("QLD_Demand_2020.csv", index = False, header = False)
     
 class poly_predictor:
-    """
-    poly_predictor is a class that calculates a polynomial that fits to the dataset data_sets
-
-
-    """
     def __init__(self, data_sets, labels = None, report = False):
-        """
-        """
         self.data_sets = data_sets
         n_data = len(self.data_sets)   #number of sets
         l_data = len(self.data_sets[0])#size of the sets
@@ -199,22 +190,6 @@ class year_model:
                 self.daily_funcs[len(self.daily_funcs)-1].append(poly_predictor([[x - mean(year[month][day]) for x in year[month][day]] for year in years]))
     
     def predict_day(self, day, month):
-        """
-        
-
-        Parameters
-        ----------
-        day : actual day value
-            DESCRIPTION.
-        month : actual month value
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
-        """
-        
         day_of_year = day + sum((31,28,31,30,31,30,31,31,30,31,30,31)[:(month-7)%12])
         
         daily_mean = self.daily_models[day_of_year].sample(1)[0]
@@ -224,7 +199,6 @@ class year_model:
         if day < 0:
             day = 0
             
-        print(day, month)
         return [list(self.daily_funcs[month][day].predict(x) + daily_mean) for x in range(48)]
     
     def plot(self, leap = False):
@@ -240,14 +214,35 @@ class year_model:
         plt.show()
         plt.figure()
         
+    def model2csv(self, year, leap = False):
+        
+        if leap:
+            month_list = (31,29,31,30,31,30,31,31,30,31,30,31)
+        else:
+            month_list = (31,28,31,30,31,30,31,31,30,31,30,31)
+        
+        ret = [["Year", "Month", "Day"] + list(range(1,49))]
+        for month in range(12):
+            month = (month+6)%12
+            for day in range(month_list[month]):
+                ret.append([year, month+1, day+1] + [x[0] for x in self.predict_day(day, month)])
+        pd.DataFrame(ret).to_csv("Predicted_QLD_Demand_"+str(year)+".csv", index = False, header = False) 
+        
 
 if __name__ == "__main__":
-    a = csvlist2list(FILES)
-           
-    #csvbad2csvgood() #Convert the files in new files into the complied qld2020 csv.
     
-    Demo = True
-    if Demo:
+    #############
+    ### DEMOS ###
+    #############
+    
+    Demo_Plots_1 = False
+    Demo_qq_norm = False
+    Demo_Daily = False
+    
+    if any((Demo_Plots_1, Demo_qq_norm, Demo_Daily)):
+        a = csvlist2list(FILES)
+    
+    if Demo_Plots_1:
         ezplot("Half-Hourly Power Demand For 1/7/2015", "time", "power demand", [4+0.5*x for x in range(len(a[0][0][0]))], a[0][0][0])
         ezplot("Daily Average Demand For 7/2015", "day", "average power demand", range(1,1+len(a[0][0])), [mean(x) for x in a[0][0]])
         all_days_2015 = [mean(x) for x in list_sum(a[0])]
@@ -270,30 +265,24 @@ if __name__ == "__main__":
         plt.figure()
         
         
+    if Demo_qq_norm:
+        for months in range(0,12):
+            points = np.array(list_sum([[mean(day) for day in year[months]] for year in a]))
+            sm.qqplot(points, line = "45", fit = True)
+            py.title("qq-plot for daily averages for the month " + str((7+months-1)%12+1))
+            py.show()
+            plt.figure()
+            
+            
+    if Demo_Daily:
         
-        # qq-plots
-        if False:
-            for months in range(0,12):
-                points = np.array(list_sum([[mean(day) for day in year[months]] for year in a]))
-                sm.qqplot(points, line = "45", fit = True)
-                py.title("qq-plot for daily averages for the month " + str((7+months-1)%12+1))
-                py.show()
-                plt.figure()
-            
-    #Time to do some calculations:
-    
-    #We'll start with deterining experimental the values for the normal dist for each month:
-    
-    monthly_params = []
-    for year in a:
-        for month in year:
-            month_mean = mean([mean(day) for day in month])
-            month_sd = math.sqrt(sum([(mean(day)-month_mean)**2 for day in month]))
-            monthly_params.append((month_mean, month_sd))
-            
-    Demo_lots = False
-            
-    if Demo_lots:
+        monthly_params = []
+        for year in a:
+            for month in year:
+                month_mean = mean([mean(day) for day in month])
+                month_sd = math.sqrt(sum([(mean(day)-month_mean)**2 for day in month]))
+                monthly_params.append((month_mean, month_sd))
+        
         plt.title("monthly standard deviation in daily means")
         plt.xlabel("Month")
         plt.ylabel("SD")
@@ -315,9 +304,100 @@ if __name__ == "__main__":
                     plt.legend()
                     plt.show()
                     plt.figure()
-            
-
-    Test = year_model(a) 
+        del month_mean, month_sd, monthly_params
     
+    if any((Demo_Plots_1, Demo_qq_norm, Demo_Daily)):
+        del a
             
+    
+
+    ####################
+    ### DELIVERABLES ###
+    ####################
+    
+    Q1 = True
+    Q2 = True
+    Q3 = True
+    
+    #csv's 2 list
+    
+    if Q1 or Q3:
+        all_yearly_data = csvlist2list(FILES)
+        
+    if Q3:
+        new_yearly_data = csvlist2list(("QLD_demand_2020.csv",))
+        
+    #CSV file of predicted half-hourly Queensland electricity demand for 2020 (based on historic average)
+    
+    if Q1 or Q3:
+        Model = year_model(all_yearly_data) 
+        
+    if Q1:
+        Model.model2csv(2020, leap = True)
+    
+    #Daily electricity demand for April 2020
+    if Q2:
+        csvbad2csvgood() 
+
+    #Visualisation of actual 2020 results
+    if Q3:  
+        #monthly averages
+        
+        plt.title("Monthly Average For All Year Overlayed")
+        plt.xlabel("Month")
+        plt.ylabel("Average Power Demand")
+        year_track = 2015
+        for year in all_yearly_data + new_yearly_data:
+            plt.plot([7 + y for y in range(12)], [mean([mean(day) for day in month]) for month in year],  label = str(year_track) )
+            year_track += 1
+        plt.legend()
+        plt.show()
+        plt.figure()
+        
+        #average for entire year
+        
+        historical_means = []
+        for month in range(12):
+            historical_means.append(mean([mean([mean(day) for day in year[month]])for year in all_yearly_data]))
+        new_means = [mean([mean([mean(day) for day in month])]) for month in new_yearly_data[0]]
+        bar_width = 0.125
+        
+        
+        for date in range(5):
+            plt.bar([x + date*bar_width for x in np.arange(12)], [mean([mean([mean(day) for day in month])]) for month in all_yearly_data[date]], width = bar_width, label = str(2015+date) + " means")
+        plt.bar([x + 5*bar_width for x in np.arange(12)], new_means, width = bar_width, label = "2020 means")
+        plt.bar([x + 6*bar_width for x in np.arange(12)], historical_means, width = bar_width, label = "historical means")
+        
+        plt.xticks([r + 0.25 for r in range(12)],[str((x+6)%12+1) for x in range(12)])
+        plt.xlabel("Month")
+        plt.ylabel("Average Power Demand")
+        
+        plt.legend(bbox_to_anchor=(1.05, 1))
+        plt.show()
+        plt.figure()
+        
+        #yearly average
+        plt.xlabel("Year")
+        plt.ylabel("Average Power Demand")
+        plt.plot([str(2015+x) for x in range(6)], [mean([mean([mean([mean(day) for day in month])]) for month in all_yearly_data[date]]) for date in range(5)] + [mean(new_means),])
+        plt.ylim(0,plt.ylim()[1]+200)
             
+        #daily distribution over the entire year
+        leap_year = (31,29,31,30,31,30,31,31,30,31,30,31)
+        
+        hist_list = []
+        for overlays in range(1000):
+            for month in range(12):
+                month = (month+6)%12
+                for day in range(leap_year[month]):
+                    true_day = (day + sum(leap_year[:month])) % len(Model.daily_models)
+                    hist_list.append([true_day, Model.daily_models[true_day].sample(1)[0][0]])
+        heatmap, xedges, yedges = np.histogram2d([x[0] for x in hist_list], [x[1] for x in hist_list], bins= (100*2,66*2))
+        
+        plt.clf()
+        plt.xlabel("Day")
+        plt.ylabel("Average Power Demand")
+        plt.title("Historical daily distribution based off the model, with 2020 daily values overlayed")
+        plt.imshow(heatmap.T, extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]], origin='lower', aspect = 0.08)
+        plt.scatter(range(len(list_sum([[mean(day) for day in month] for month in new_yearly_data[0]]))),list_sum([[mean(day) for day in month] for month in new_yearly_data[0]]), color = 'w', s = 2)
+        plt.show()

@@ -27,4 +27,7 @@ for any given day.
 
 Ok, i made my first model to predict the next year, and when looking at the output, i notice it looks significantly 
 different to the traning data. I think my assumption that the montly distributions were normal is incorrect.
-So i'm instead going to fit the montly distributions to a binomial mixed model distribution.
+
+ok, i instead used a gaussian kernel density estimator to sample the daily means.
+
+The model is now done.
