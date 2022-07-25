@@ -8,4 +8,23 @@ the averages relative to the years.
 Ok, with all this in mind, to compare this historical data to later years i'm going to 
 1) determine the parameters for the normal distribution of daily values for each month
 2) determine the function that best fits the daily power demands for any given day.
-3) determine the function that best fits the mean of the monthly average over the corse of a year
+3) determine the function that best fits the mean of the monthly average over the course of a year
+
+
+
+1)
+After plotting the monthly standard deviation for all months, there is a definate periodic pattern with a yearly
+period. 
+ok, for each month i determinde the confidence interval for both parameters, so we may do a comparison to the 
+actual 2020 data.
+Either way, for now the estimates for the mean and sd are enough to generate the predicted dataset.
+
+2)
+I plotted the hourly values for every day, with every year overlayed, and the hourly value does seem to fit some function
+across each year, with a couple of exceptions.
+I then made a function which will fit the best polynomial it can to the average hourly values over all years
+for any given day.
+
+Ok, i made my first model to predict the next year, and when looking at the output, i notice it looks significantly 
+different to the traning data. I think my assumption that the montly distributions were normal is incorrect.
+So i'm instead going to fit the montly distributions to a binomial mixed model distribution.
