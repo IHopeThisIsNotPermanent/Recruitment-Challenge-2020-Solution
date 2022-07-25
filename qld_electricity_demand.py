@@ -9,21 +9,61 @@ import pandas as pd
 
 FILES = ["QLD_Demand_2015.csv", "QLD_demand_2016.csv", "QLD_demand_2017.csv", "QLD_demand_2018.csv", "QLD_demand_2019.csv"]
 
-def ezplot(title, xlabel, ylabel, xvals, yvals, custom = False):
+def ezplot(title, xlabel, ylabel, xvals, yvals):
+    """
+    uses the matplotlib library to create a scatter plot, its a function for the sake of saving lines
+    
+    Parameters
+    ----------
+    title : string
+        The title to be displayed 
+    xlabel : string
+        The label of the x axis to be displayed
+    ylabel : string
+        The label of the y acis to be displayed
+    xvals : list<float>
+        The list of x values to be used in the scatter plot
+    yvals : list<float> 
+        The list of y values to be used in the scatter plot
+    custom : 
+    """
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    if not custom:
-        plt.scatter(xvals, yvals)
-    else:
-        plt.plot(custom)
+    plt.scatter(xvals, yvals)
     plt.show()
     plt.figure()
 
 def mean(x):
+    """
+    returns the mean of a list of numbers
+    
+    Parameters
+    ----------
+    x : list<numbers>
+        the input list
+    
+    Returns
+    -------
+    the mean of the list
+    """
+    
     return(sum(x)/len(x))
 
 def list_sum(inp):
+    """
+    the sum function but for list concatentaiton
+    
+    Parameters
+    ----------
+    inp : list<list>
+        the list of lists to be smooshed together
+        
+    Returns
+    -------
+    The sum of the lists in inp
+    """
+    
     base = list(inp[0])
     for x in list(inp[1:]):
         base += list(x)
@@ -31,7 +71,7 @@ def list_sum(inp):
 
 def csvlist2list(file_names):
     """
-    csvlist2list converts the nice csv files to a python list
+    csvlist2list converts the nice csv files (the ones given, not the ones from the site) to a python list
 
     Parameters
     ----------
@@ -41,8 +81,12 @@ def csvlist2list(file_names):
     Returns
     -------
     The list of enegery demand values formatted like: [[Year],[[Month],[Day,...,Day]]]
+    so for example, if i set some variable called "out" to the output of this function, and i wanted to get
+    the dialy data from the first year in the list, and the second month (with the first month being the 7th), and the
+    5th day of that month, i'd write out[0][1][4] 
 
     """
+    
     data = []
     for file in [open(x) for x in file_names]:
         filecontent = csv.reader(file, delimiter = ",")
@@ -59,20 +103,32 @@ def csvlist2list(file_names):
 
 
 def zero(x):
+    """
+    This function is just used for displaying numbers from 00-99 with the 0 in front of the one digit ones
+    """
     if x<10:
         return "0" + str(x)
     return str(x)
 
 def PriceNDemand(year, months):
+    """
+    This function just lists the PRICE_AND_DEMAND file names that we need to make the 2020 csv
+    """
     return ["./New2020Data/PRICE_AND_DEMAND_"+str(year)+zero(x)+"_QLD1.csv" for x in months]
 
 def updateTimeNDate(string):
+    """
+    This function extracts the year month day, and time from a row of the PRICE_AND_DEMAND table
+    """
     ymd = string.split(" ")[0].split("/")
     time = string.split(" ")[1].split(":")
     time = int(time[0])+int(time[1])/30*0.5
     return ymd, time
 
 def csvbad2csvgood():
+    """
+    This function takes the csv files from the new2020Data folder, and rearragnes them into the same format that the QLD_Demand csv files have
+    """
     vals = []
     act_ymd = [2020,7,1]
     ret = [["Year", "Month", "Day"] + list(range(1,49))]
@@ -102,6 +158,10 @@ def csvbad2csvgood():
     pd.DataFrame(ret).to_csv("QLD_Demand_2020.csv", index = False, header = False)
     
 class poly_predictor:
+    """
+    the data sets you give it are sets of 2d points, which are overlayed with each other. 
+    poly_predictor uses np.polyfit, and LOOCV to calcuate the best polynomial to fit the overlayed data.
+    """
     def __init__(self, data_sets, labels = None, report = False):
         self.data_sets = data_sets
         n_data = len(self.data_sets)   #number of sets
@@ -156,6 +216,9 @@ class poly_predictor:
 
 
 class kernel_density:
+    """
+    Give kernel_density some 1D data, and it will create a gausian kernal density distribtuion for you to sample.
+    """
     def __init__(self, data):
         self.data = [[x,] for x in data]
         self.model = KernelDensity()
@@ -165,6 +228,11 @@ class kernel_density:
         return self.model.sample(n)
 
 class year_model:
+    """
+    This is the main model, given the yearly data, it will allow you to sample a new set of yearly data.
+    just in terms of nice-ness i'd probably create some global variabels for the month lists i.e (31,28,31,30,31,30,31,31,30,31,30,31)
+    
+    """
     def __init__(self, years):
         
         DAY_WIDTH = 2
